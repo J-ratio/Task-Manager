@@ -2,9 +2,8 @@ package com.taskmanagement.controller;
 
 import com.taskmanagement.dto.TaskDTO;
 import com.taskmanagement.entity.Task;
-import com.taskmanagement.entity.User;
-import com.taskmanagement.repository.TaskRepository;
-import com.taskmanagement.repository.UserRepository;
+import com.taskmanagement.entity.TaskStatus;
+import com.taskmanagement.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,79 +15,52 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TaskController {
 
-    private final TaskRepository taskRepository;
-    private final UserRepository userRepository;
+    private final TaskService taskService;
 
     @GetMapping
     public List<Task> getAllTasks() {
-        return taskRepository.findAll();
+        return taskService.getAllTasks();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Task> getTask(@PathVariable Long id) {
-        return taskRepository.findById(id)
+        return taskService.getAllTasks().stream()
+                .filter(task -> task.getId().equals(id))
+                .findFirst()
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody TaskDTO taskDTO) {
-        Task task = new Task();
-        task.setTitle(taskDTO.getTitle());
-        task.setDescription(taskDTO.getDescription());
-        task.setStatus(taskDTO.getStatus());
-        task.setPriority(taskDTO.getPriority());
-        task.setDueDate(taskDTO.getDueDate());
-        
-        if (taskDTO.getAssigneeId() != null) {
-            return userRepository.findById(taskDTO.getAssigneeId())
-                    .map(assignee -> {
-                        task.setAssignee(assignee);
-                        return ResponseEntity.ok(taskRepository.save(task));
-                    })
-                    .orElse(ResponseEntity.badRequest().build());
+    public Task createTask(@RequestBody TaskDTO taskDTO) {
+        return taskService.createTask(taskDTO);
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Task> updateTaskStatus(
+            @PathVariable Long id,
+            @RequestParam TaskStatus status) {
+        try {
+            Task updatedTask = taskService.updateTaskStatus(id, status);
+            return ResponseEntity.ok(updatedTask);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
-        
-        return ResponseEntity.ok(taskRepository.save(task));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody TaskDTO taskDTO) {
-        return taskRepository.findById(id)
-                .map(existingTask -> {
-                    existingTask.setTitle(taskDTO.getTitle());
-                    existingTask.setDescription(taskDTO.getDescription());
-                    existingTask.setStatus(taskDTO.getStatus());
-                    existingTask.setPriority(taskDTO.getPriority());
-                    existingTask.setDueDate(taskDTO.getDueDate());
-                    
-                    if (taskDTO.getAssigneeId() != null) {
-                        return userRepository.findById(taskDTO.getAssigneeId())
-                                .map(assignee -> {
-                                    existingTask.setAssignee(assignee);
-                                    return ResponseEntity.ok(taskRepository.save(existingTask));
-                                })
-                                .orElse(ResponseEntity.badRequest().build());
-                    } else {
-                        existingTask.setAssignee(null);
-                        return ResponseEntity.ok(taskRepository.save(existingTask));
-                    }
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
-        return taskRepository.findById(id)
-                .map(task -> {
-                    taskRepository.delete(task);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
+    @GetMapping("/status/{status}")
+    public List<Task> getTasksByStatus(@PathVariable TaskStatus status) {
+        return taskService.getTasksByStatus(status);
     }
 
     @GetMapping("/assignee/{userId}")
     public List<Task> getTasksByAssignee(@PathVariable Long userId) {
-        return taskRepository.findByAssigneeId(userId);
+        return taskService.getTasksByAssignee(userId);
+    }
+
+    @PostMapping("/reprocess")
+    public ResponseEntity<Void> reprocessFailedTasks() {
+        taskService.reprocessFailedTasks();
+        return ResponseEntity.ok().build();
     }
 } 
