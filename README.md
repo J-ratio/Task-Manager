@@ -1,6 +1,177 @@
 # Task Management System
 
-A robust task management system built with Spring Boot, featuring user authentication, task management, file attachments, and real-time notifications.
+A Spring Boot-based task management system with priority-based task processing, user management, and RESTful APIs.
+
+## Features
+
+### Task Management
+- Create, read, update, and delete tasks
+- Assign tasks to users
+- Set task priorities (HIGH, MEDIUM, LOW)
+- Track task status (TODO, IN_PROGRESS, DONE)
+- Set due dates for tasks
+
+### User Management
+- Create and manage users
+- Assign tasks to users
+- View tasks assigned to specific users
+
+### Priority-based Task Processing
+- Automatic task processing based on priority
+- Real-time task status updates
+- Configurable processing intervals
+- Error handling and retry mechanism
+
+## API Documentation
+
+### Task APIs
+
+#### Create Task
+```http
+POST /api/tasks
+Content-Type: application/json
+
+{
+    "title": "Task Title",
+    "description": "Task Description",
+    "priority": "HIGH|MEDIUM|LOW",
+    "assigneeId": 1,
+    "dueDate": "2024-03-20T10:00:00"
+}
+```
+
+#### Get All Tasks
+```http
+GET /api/tasks
+```
+
+#### Get Task by ID
+```http
+GET /api/tasks/{id}
+```
+
+#### Update Task Status
+```http
+PUT /api/tasks/{id}/status?status=TODO|IN_PROGRESS|DONE
+```
+
+#### Get Tasks by Status
+```http
+GET /api/tasks/status/{status}
+```
+
+#### Get Tasks by Assignee
+```http
+GET /api/tasks/assignee/{userId}
+```
+
+#### Reprocess Failed Tasks
+```http
+POST /api/tasks/reprocess
+```
+
+### User APIs
+
+#### Create User
+```http
+POST /api/users
+Content-Type: application/json
+
+{
+    "name": "User Name",
+    "email": "user@example.com"
+}
+```
+
+#### Get All Users
+```http
+GET /api/users
+```
+
+#### Get User by ID
+```http
+GET /api/users/{id}
+```
+
+#### Update User
+```http
+PUT /api/users/{id}
+Content-Type: application/json
+
+{
+    "name": "Updated Name",
+    "email": "updated@example.com"
+}
+```
+
+#### Delete User
+```http
+DELETE /api/users/{id}
+```
+
+## Task Processing System
+
+The system includes a priority-based task processor that automatically processes tasks based on their priority level. The processor:
+
+1. Runs on a configurable interval (default: 1 second)
+2. Processes tasks in priority order (HIGH > MEDIUM > LOW)
+3. Updates task status automatically
+4. Handles errors and retries failed tasks
+
+### Task Processing Flow
+
+1. Tasks are created with TODO status
+2. The processor picks up TODO tasks
+3. Tasks are processed in priority order
+4. Status transitions: TODO → IN_PROGRESS → DONE
+5. Failed tasks are reset to TODO status for retry
+
+### Configuration
+
+The task processor can be configured in `application.properties`:
+
+```properties
+# Task Processor Configuration
+task.processor.interval=1000  # Processing interval in milliseconds
+```
+
+## Database Configuration
+
+The system uses PostgreSQL as the database. Configure the database connection in `application.properties`:
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/task_management
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+spring.jpa.hibernate.ddl-auto=update
+```
+
+## Running the Application
+
+1. Ensure PostgreSQL is running and configured
+2. Build the application:
+   ```bash
+   mvn clean install
+   ```
+3. Run the application:
+   ```bash
+   mvn spring-boot:run
+   ```
+
+The application will start on port 8080 by default.
+
+## Testing
+
+Run the test suite:
+```bash
+mvn test
+```
+
+The test suite includes:
+- Task creation and processing tests
+- Priority-based processing tests
+- User management tests
+- API endpoint tests
 
 ## Prerequisites
 
@@ -42,42 +213,6 @@ CREATE DATABASE task_management;
 
 2. The application will automatically create the necessary tables on startup.
 
-## Running the Application
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd task-management
-```
-
-2. Build the project:
-```bash
-mvn clean install
-```
-
-3. Run the application:
-```bash
-mvn spring-boot:run
-```
-
-The application will be available at `http://localhost:8080/api`
-
-## API Documentation
-
-Once the application is running, you can access the Swagger UI at:
-`http://localhost:8080/api/swagger-ui.html`
-
-## Features
-
-- User authentication and authorization
-- Task creation and management
-- Task assignment and status tracking
-- File attachments
-- Real-time notifications
-- Email notifications
-- Task search and filtering
-- Task history and audit trail
-
 ## Project Structure
 
 ```
@@ -91,13 +226,6 @@ src/main/java/com/taskmanagement/
 ├── security/       # Security related classes
 ├── service/        # Business logic
 └── util/           # Utility classes
-```
-
-## Testing
-
-Run the tests using:
-```bash
-mvn test
 ```
 
 ## Contributing
